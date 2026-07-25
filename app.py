@@ -1,7 +1,10 @@
+# Ye 2 line proto ke saare version errors theek kar dengi
+import os
+os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
+
 from flask import Flask, request, jsonify
 import sys
 import json
-import os
 
 # Tumhare ff_proto folder ko link karne ka code
 sys.path.append('./ff_proto')
@@ -15,7 +18,7 @@ except Exception as e:
 
 app = Flask(__name__)
 
-# Smart Token Loader: Ye URL se region check karke sahi token uthayega
+# Smart Token Loader
 def load_token(region):
     filename = f'token_{region}.json'
     if os.path.exists(filename):
@@ -37,12 +40,11 @@ def home():
 @app.route('/get_player', methods=['GET'])
 def get_player():
     uid = request.args.get('uid')
-    region = request.args.get('region', 'ind') # Agar koi region na dale, toh by default 'ind' lega
+    region = request.args.get('region', 'ind') 
     
     if not uid:
         return jsonify({"error": "Bhai UID to daal!"}), 400
 
-    # Sahi desh ka token load kar rahe hain
     token_data = load_token(region)
     
     if "error" in token_data:
