@@ -4,7 +4,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 from flask import Flask, request, jsonify
 import sys
 import json
-import requests # Naya tool data lane ke liye
+import requests 
 
 sys.path.append('./ff_proto')
 
@@ -22,7 +22,17 @@ def load_token(region):
     if os.path.exists(filename):
         try:
             with open(filename, 'r') as file:
-                return json.load(file)
+                data = json.load(file)
+                # Yahan fix kiya hai: Agar file me list hai to usko pehla item nikal kar dictionary bana dega
+                if isinstance(data, list):
+                    if len(data) > 0:
+                        if isinstance(data[0], dict):
+                            return data[0]
+                        else:
+                            return {"token": str(data[0])}
+                    else:
+                        return {"error": "Token file khali hai!"}
+                return data # Agar pehle se dictionary hai to direct bhej dega
         except:
             return {"error": "Token read nahi hua!"}
     return {"error": f"Region '{region}' ka token nahi mila!"}
@@ -45,7 +55,6 @@ def get_player():
 
     try:
         # Free Fire Server par request bhejna
-        # Token file me 'url' ya authorization keys hoti hain
         game_url = token_data.get('url', f"https://client.{region}.freefiremobile.com/GetPlayerPersonalProfile")
         
         headers = {
@@ -61,17 +70,16 @@ def get_player():
             player_data = account_show_pb2.AccountProfile()
             player_data.ParseFromString(response.content)
             
-            # Yahan decode kiya hua data bheja jayega
+            # Yahan decode kiya hua data bhej rahe hain
             return jsonify({
                 "status": "Success",
                 "uid": uid,
                 "region": region,
                 "nickname": player_data.nickname if hasattr(player_data, 'nickname') else "Unknown",
-                "message": "Data successfully fetched from game server!",
-                # Tum apni zarurat ke hisaab se kills, rank sab yahan add kar sakte ho
+                "message": "Data successfully fetched from game server!"
             })
         else:
-            return jsonify({"error": "Game server ne block kar diya ya UID galat hai"}), response.status_code
+            return jsonify({"error": "Game server ne block kar diya ya Token expire ho gaya"}), response.status_code
 
     except Exception as e:
         return jsonify({"error": f"Data lane me dikkat: {str(e)}"}), 500
